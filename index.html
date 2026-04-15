@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>競合分析レポート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    /* ライトベース */
+    --bg:       #f7f8fa;
+    --surface:  #ffffff;
+    --surface2: #f0f2f5;
+    --border:   #e0e4ec;
+    /* アクセント：戦略的な引き締まりを残す */
+    --accent:   #1e5fe8;   /* 強い青 */
+    --accent2:  #0aaa82;   /* ティール */
+    --accent3:  #e0402a;   /* 赤 */
+    --accent4:  #d98200;   /* 琥珀 */
+    /* テキスト */
+    --text:     #0f1623;
+    --text-sub: #4a5568;
+    --text-dim: #9aa3b2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    min-height: 100vh;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    padding: 60px 60px 44px;
+    border-bottom: 3px solid var(--accent);
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      linear-gradient(135deg, rgba(30,95,232,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 90% 50%, rgba(10,170,130,0.06) 0%, transparent 55%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+  header h1 {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: clamp(28px, 4vw, 52px);
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  header h1 span { color: var(--accent2); }
+  .header-sub {
+    color: var(--text-sub);
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== TOC ===== */
+  .toc {
+    display: flex;
+    gap: 8px;
+    padding: 16px 60px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .toc-item {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .toc-item:hover {
+    background: var(--surface2);
+    color: var(--text-sub);
+  }
+  .toc-item.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+  }
+
+  /* ===== MAIN ===== */
+  main { padding: 56px 60px; max-width: 1400px; margin: 0 auto; }
+
+  /* ===== SECTION HEADERS ===== */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  .section-title {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 28px;
+    color: var(--text);
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  section { margin-bottom: 72px; }
+
+  /* ===== 1. OVERVIEW TABLE ===== */
+  .overview-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--text);
+    color: rgba(255,255,255,0.7);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 12px 16px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--text);
+    background: var(--surface);
+  }
+  tr:hover td { background: #f0f5ff; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .tag-yes    { background: #d4f5ec; color: #0a7a5e; border: 1px solid #9ee8d4; }
+  .tag-no     { background: #fde8e6; color: #b02010; border: 1px solid #f4b8b0; }
+  .tag-strong { background: #dce8ff; color: #1540aa; border: 1px solid #a8c0f8; }
+
+  .dr-bar { display: flex; align-items: center; gap: 10px; }
+  .dr-track { width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .dr-fill  { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+  .dr-num   { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 28px; color: var(--text); }
+
+  .comp-name { font-weight: 700; font-size: 14px; color: var(--text); }
+  .comp-url  { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ===== 2. INDIVIDUAL CARDS ===== */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 20px rgba(30,95,232,0.1); transform: translateY(-2px); }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .card-tier-s::before { background: linear-gradient(90deg, var(--accent3), var(--accent4)); }
+  .card-tier-a::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .card-tier-b::before { background: linear-gradient(90deg, #b0bac8, #d0d8e4); }
+
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .card-name   { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .card-domain { font-size: 11px; color: var(--text-dim); }
+  .tier-badge  { font-family: 'Noto Sans JP', sans-serif; font-size: 28px; font-weight: 700; opacity: 0.6; }
+  .tier-s { color: var(--accent3); }
+  .tier-a { color: var(--accent); }
+  .tier-b { color: var(--text-dim); }
+
+  .card-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin-bottom: 20px;
+    background: var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .metric-item { text-align: center; padding: 14px 8px; background: var(--surface2); }
+  .metric-val  { font-size: 16px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .metric-lbl  { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+  .card-sec-title {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    margin-top: 16px;
+    font-weight: 600;
+  }
+  .strength-list, .strategy-list { list-style: none; padding: 0; }
+  .strength-list li {
+    padding: 6px 0 6px 20px;
+    position: relative;
+    font-size: 13px;
+    color: var(--text-sub);
+    border-bottom: 1px solid var(--border);
+  }
+  .strength-list li:last-child { border-bottom: none; }
+  .strength-list li::before { content: '▸'; position: absolute; left: 0; color: var(--accent2); font-size: 11px; top: 8px; }
+  .strategy-list li {
+    padding: 6px 0 6px 20px;
+    position: relative;
+    font-size: 13px;
+    color: var(--text-sub);
+    border-bottom: 1px solid var(--border);
+  }
+  .strategy-list li:last-child { border-bottom: none; }
+  .strategy-list li::before { content: '◆'; position: absolute; left: 0; color: var(--accent4); font-size: 9px; top: 9px; }
+
+  /* ===== 3. POSITIONING MAP ===== */
+  .pos-wrap {
+    /* マップ部分だけライトテーマで囲む */
+    background: #ffffff;
+    border: 1px solid #d8d4cc;
+    border-radius: 12px;
+    padding: 36px;
+    margin-bottom: 20px;
+  }
+  .pos-wrap h3 {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #888;
+    font-weight: 500;
+    margin-bottom: 28px;
+  }
+  .pos-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    padding-top: 10px;
+    border-top: 1px solid #d8d4cc;
+  }
+  .pos-note {
+    background: #f5f3ef;
+    border: 1px solid #d8d4cc;
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.8;
+  }
+  .pos-note strong { color: #1a1814; font-weight: 700; }
+
+  /* ===== 4. WINNING STRATEGY ===== */
+  .winning-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+  .winning-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+  .winning-card:hover { box-shadow: 0 4px 16px rgba(30,95,232,0.08); }
+  .winning-num {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 48px;
+    color: var(--border);
+    position: absolute;
+    top: 12px; right: 20px;
+    line-height: 1;
+  }
+  .winning-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .tag-niche   { background: #f0e8ff; color: #6020b0; border: 1px solid #d0b0f8; }
+  .tag-content { background: #dce8ff; color: #1540aa; border: 1px solid #a8c0f8; }
+  .tag-seo     { background: #d4f5ec; color: #0a7a5e; border: 1px solid #9ee8d4; }
+  .tag-brand   { background: #fff0d0; color: #7a4800; border: 1px solid #f0d080; }
+  .winning-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.4; }
+  .winning-desc  { font-size: 13px; color: var(--text-sub); line-height: 1.8; }
+  .winning-desc strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    padding: 32px 60px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    background: var(--surface);
+  }
+
+  @media (max-width: 900px) {
+    header, main { padding-left: 24px; padding-right: 24px; }
+    .toc { padding-left: 24px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .winning-grid { grid-template-columns: 1fr; }
+    .pos-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-label">Competitive Intelligence Report</div>
+  <h1>競合分析<span>レポート</span></h1>
+</header>
+
+<div class="toc">
+  <span class="toc-item active" onclick="document.getElementById('sec1').scrollIntoView({behavior:'smooth'})">1. 各社データ概観</span>
+  <span class="toc-item" onclick="document.getElementById('sec2').scrollIntoView({behavior:'smooth'})">2. 各社の強みと課題</span>
+  <span class="toc-item" onclick="document.getElementById('sec3').scrollIntoView({behavior:'smooth'})">3. 競合ポジショニング</span>
+</div>
+
+<main>
+
+  <section id="sec1">
+    <div class="section-label">Section 01</div>
+    <div class="section-title">各社データ概観</div>
+    <div class="overview-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>競合</th>
+            <th>DR</th>
+            <th>被リンク数</th>
+            <th>保有ページ数</th>
+            <th>コラム</th>
+            <th>ポジション</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="comp-name">ジョブメドレー</div><div class="comp-url">job-medley.com</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:82%"></div></div><span class="dr-num">82</span></div></td>
+            <td>3,600,000</td>
+            <td>3,420,000</td>
+            <td><span class="tag tag-strong">◎ 特に強い</span></td>
+            <td style="color:var(--accent3);font-weight:700;">求人×メディア 最大手</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">マイナビ薬剤師</div><div class="comp-url">pharma.mynavi.jp</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:92%"></div></div><span class="dr-num">92</span></div></td>
+            <td>914,000</td>
+            <td>215,000</td>
+            <td><span class="tag tag-yes">◯</span></td>
+            <td style="color:var(--accent3);font-weight:700;">ブランド最強・転職特化</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">エムスリー（ファーマスタイル）</div><div class="comp-url">ph-lab.m3.com</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:80%"></div></div><span class="dr-num">80</span></div></td>
+            <td>151</td>
+            <td>1,380</td>
+            <td><span class="tag tag-strong">◎ 特に強い</span></td>
+            <td style="color:var(--accent);font-weight:700;">専門コンテンツ×会員基盤</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">日本薬剤師研修センター（JPEC）</div><div class="comp-url">jpec.or.jp</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:65%"></div></div><span class="dr-num">65</span></div></td>
+            <td>38,000</td>
+            <td>802</td>
+            <td><span class="tag tag-no">×</span></td>
+            <td style="color:var(--accent4);font-weight:700;">公的機関・圧倒的被リンク</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">なの花薬局</div><div class="comp-url">recruit.nanohana-ph.jp</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:53%"></div></div><span class="dr-num">53</span></div></td>
+            <td>969</td>
+            <td>107</td>
+            <td><span class="tag tag-yes">◯</span></td>
+            <td>採用特化・地域密着</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">MPラーニング</div><div class="comp-url">mp-learning.com</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:39%"></div></div><span class="dr-num">39</span></div></td>
+            <td>468</td>
+            <td>82</td>
+            <td><span class="tag tag-yes">◯</span></td>
+            <td>eラーニング・研修認定</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">イオンハピコム</div><div class="comp-url">hapycom.or.jp</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:32%"></div></div><span class="dr-num">32</span></div></td>
+            <td>473</td>
+            <td>53</td>
+            <td><span class="tag tag-no">×</span></td>
+            <td>イオン系・登録販売者研修</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">メディカルナレッジ</div><div class="comp-url">medical-knowledge.net</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:26%"></div></div><span class="dr-num">26</span></div></td>
+            <td>328</td>
+            <td>159</td>
+            <td><span class="tag tag-no">×</span></td>
+            <td>eラーニング専業・小規模</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">JPラーニング</div><div class="comp-url">jplearning.jp</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:18%"></div></div><span class="dr-num">18</span></div></td>
+            <td>334</td>
+            <td>50</td>
+            <td><span class="tag tag-yes">◯</span></td>
+            <td>薬ゼミ系・学習特化</td>
+          </tr>
+          <tr>
+            <td><div class="comp-name">ためとこ</div><div class="comp-url">info.tametoko.jp</div></td>
+            <td><div class="dr-bar"><div class="dr-track"><div class="dr-fill" style="width:21%"></div></div><span class="dr-num">21</span></div></td>
+            <td>104</td>
+            <td>201</td>
+            <td><span class="tag tag-yes">◯</span></td>
+            <td>単位管理×学習・新興</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="sec2">
+    <div class="section-label">Section 02</div>
+    <div class="section-title">各社の強みと課題</div>
+    <div class="cards-grid">
+
+      <!-- ジョブメドレー -->
+      <div class="card card-tier-s">
+        <div class="card-header">
+          <div><div class="card-name">ジョブメドレー</div><div class="card-domain">job-medley.com</div></div>
+          <div class="tier-badge tier-s">S</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">82</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">360万</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">342万</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li>薬剤師に限らず<strong>医療従事者全般</strong>を対象にした求人・情報ページが膨大で、ドメイン全体のオーソリティが圧倒的</li>
+          <li>「なるほど！ジョブメドレー」メディアで1,400件以上の記事を保有。転職ガイド・職種解説がSEOを強力に下支え</li>
+          <li>DR82＋被リンク360万という規模は他社を桁違いに凌駕。新規記事を出すだけで上位表示しやすい状態</li>
+          <li>医師・看護師・薬剤師・介護など幅広い職種を一元管理。<strong>クロスセル・広告収益・データ活用</strong>で優位</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>薬剤師<strong>専門</strong>の深い学術コンテンツ（服薬指導・疾患知識・認定薬剤師情報）は手薄</li>
+          <li>総合求人サイトゆえに薬剤師特有の悩みや職場環境の詳細情報が弱い</li>
+        </ul>
+      </div>
+
+      <!-- マイナビ薬剤師 -->
+      <div class="card card-tier-s">
+        <div class="card-header">
+          <div><div class="card-name">マイナビ薬剤師</div><div class="card-domain">pharma.mynavi.jp</div></div>
+          <div class="tier-badge tier-s">S</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">92</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">91万</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">21.5万</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li>DR92はこの中で最高値。<strong>マイナビグループ全体</strong>からの被リンク・ブランド認知が圧倒的</li>
+          <li>全国14拠点で対面相談が可能。薬剤師専任キャリアアドバイザーという<strong>人的サービス</strong>が差別化要因</li>
+          <li>転職コラム・職場カルテ・年収ランキングなど豊富なコンテンツで転職検討ユーザーをファネル上部で捕捉</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>転職・求人に完全特化。在職中の薬剤師が日常的に使う「勉強・認定取得」ニーズは拾えていない</li>
+          <li>離職・転職意向がない薬剤師との接点が構造上作りにくい</li>
+        </ul>
+      </div>
+
+      <!-- エムスリー -->
+      <div class="card card-tier-s">
+        <div class="card-header">
+          <div><div class="card-name">エムスリー（ファーマスタイル）</div><div class="card-domain">ph-lab.m3.com</div></div>
+          <div class="tier-badge tier-s">S</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">80</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">151</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">1,380</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li>親会社m3.comが持つ<strong>28万人以上の薬剤師・医師会員基盤</strong>が最大の強み。コンテンツを出すだけで即リーチ</li>
+          <li>肺がん・高血圧・COPDなど疾患特集＋服薬指導コンテンツを1,380ページ超保有。専門性の深さが他を圧倒</li>
+          <li>被リンク数は少ないがDR80を維持。m3.com本体の権威が子ドメインに波及しているため</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>完全会員制のため非会員ユーザーへのSEO流入が限定的</li>
+          <li>認定薬剤師の単位取得など<strong>資格・研修管理</strong>領域には踏み込んでいない</li>
+        </ul>
+      </div>
+
+      <!-- JPEC -->
+      <div class="card card-tier-a">
+        <div class="card-header">
+          <div><div class="card-name">日本薬剤師研修センター</div><div class="card-domain">jpec.or.jp</div></div>
+          <div class="tier-badge tier-a">A</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">65</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">38,000</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">802</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li><strong>公益財団法人という公的権威</strong>が最大の武器。認定薬剤師制度を運営しており全薬剤師が関わるインフラ的存在</li>
+          <li>被リンク38,000件は民間を圧倒。「薬剤師 研修認定」「PECS」等で不動の1位を維持</li>
+          <li>官公庁・大学・薬局チェーンからの被リンクで構成されており、リンクの質も高い</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>コンテンツ発信に消極的。コラム・ブログ・教育コンテンツは皆無でSEOの拡張余地を活かしきれていない</li>
+          <li>UXが古く、デジタル面での利便性が低い。PECS移行途中で混乱も生じている</li>
+        </ul>
+      </div>
+
+      <!-- なの花薬局 -->
+      <div class="card card-tier-a">
+        <div class="card-header">
+          <div><div class="card-name">なの花薬局</div><div class="card-domain">recruit.nanohana-ph.jp</div></div>
+          <div class="tier-badge tier-a">A</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">53</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">969</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">107</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li>採用サイト専用ドメインにもかかわらずDR53・被リンク969は高く、<strong>企業ブランド浸透度</strong>の高さを示す</li>
+          <li>社員インタビュー・座談会・教育研修制度など採用コンテンツが充実。求職者の「実態を知りたい」ニーズを満たす</li>
+          <li>全国展開の大手チェーンで、知名度と安定感が採用競争力に直結</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>採用特化のため在職中・非転職ユーザーとの接点がゼロ</li>
+          <li>コラムはあるが情報発信量は限定的で、SEO的な集客力は低い</li>
+        </ul>
+      </div>
+
+      <!-- MPラーニング -->
+      <div class="card card-tier-b">
+        <div class="card-header">
+          <div><div class="card-name">MPラーニング</div><div class="card-domain">mp-learning.com</div></div>
+          <div class="tier-badge tier-b">B</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">39</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">468</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">82</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li>JPEC認定のeラーニングで<strong>公認の研修プロバイダー</strong>として信頼性が高い</li>
+          <li>「メディカルトレンド」で医療情報コンテンツを発信。コラム×研修の組み合わせが構築されつつある</li>
+          <li>950以上のコンテンツ数と受講制限なしのプランが継続利用を促進</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>DR39・保有ページ82件と規模が小さく、SEO流入は限定的</li>
+          <li>競合との差別化コンテンツが不明確で、ブランドの個性が弱い</li>
+        </ul>
+      </div>
+
+      <!-- イオンハピコム -->
+      <div class="card card-tier-b">
+        <div class="card-header">
+          <div><div class="card-name">イオンハピコム</div><div class="card-domain">hapycom.or.jp</div></div>
+          <div class="tier-badge tier-b">B</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">32</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">473</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">53</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li><strong>イオングループ</strong>という巨大な組織基盤が後ろ盾。グループ企業への研修提供という安定したビジネス基盤</li>
+          <li>登録販売者・薬剤師・医療機器販売員と多職種対象の研修でグループ内需要を独占</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>コラムページなし、コンテンツマーケティング不在でオーガニック流入がほぼ期待できない</li>
+          <li>グループ外への展開に積極的でなく、一般薬剤師ユーザーとの接点が乏しい</li>
+        </ul>
+      </div>
+
+      <!-- メディカルナレッジ -->
+      <div class="card card-tier-b">
+        <div class="card-header">
+          <div><div class="card-name">メディカルナレッジ</div><div class="card-domain">medical-knowledge.net</div></div>
+          <div class="tier-badge tier-b">B</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">26</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">328</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">159</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li>JPEC認定の研修プロバイダーとして一定の信頼性。オンコロジー・緩和医療など<strong>専門特化講座</strong>で差別化</li>
+          <li>eラーニング専業として長年運営。コンテンツの質とノウハウが蓄積されている</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>DR26・コラムなしでSEO集客がほぼ機能していない。新規ユーザーの発見経路が限定的</li>
+          <li>サイト規模・被リンク数とも業界内で最低水準に近く、存在感の向上が急務</li>
+        </ul>
+      </div>
+
+      <!-- JPラーニング -->
+      <div class="card card-tier-b">
+        <div class="card-header">
+          <div><div class="card-name">JPラーニング</div><div class="card-domain">jplearning.jp</div></div>
+          <div class="tier-badge tier-b">B</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">18</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">334</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">50</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li><strong>薬ゼミ（G13薬学ゼミナール）</strong>の監修・ブランドを背景に持ち、薬学生・若手薬剤師への認知度が高い</li>
+          <li>大手調剤薬局グループが使用するコンテンツを提供しており、B2B基盤が安定</li>
+          <li>3万人以上の薬剤師が学習実績あり、という実績が信頼性の訴求に機能</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>DR18は競合中最低水準。コラムページはあるが記事数が少なくSEOへの貢献は軽微</li>
+          <li>ページ数50件と規模が最も小さく、コンテンツ戦略の強化余地が大きい</li>
+        </ul>
+      </div>
+
+      <!-- ためとこ -->
+      <div class="card card-tier-b">
+        <div class="card-header">
+          <div><div class="card-name">ためとこ</div><div class="card-domain">info.tametoko.jp</div></div>
+          <div class="tier-badge tier-b">B+</div>
+        </div>
+        <div class="card-metrics">
+          <div class="metric-item"><div class="metric-val">21</div><div class="metric-lbl">DR</div></div>
+          <div class="metric-item"><div class="metric-val">104</div><div class="metric-lbl">被リンク</div></div>
+          <div class="metric-item"><div class="metric-val">201</div><div class="metric-lbl">ページ数</div></div>
+        </div>
+        <div class="card-sec-title">なぜ強いのか</div>
+        <ul class="strength-list">
+          <li>研修単位の電子管理（PECS連携）＋学習の一体化という<strong>他社にない機能設計</strong>（特許申請中）</li>
+          <li>登録者2万人・富士薬品やクスリのアオキ等への法人導入実績。無料〜月990円の広い料金間口</li>
+          <li>コラムは学び・キャリア・トレンド・ライフスタイルの4カテゴリで約60記事を保有</li>
+          <li>薬学ゼミナール・医学アカデミーグループのバックボーンと「今日の治療薬」コラボによる差別化</li>
+        </ul>
+        <div class="card-sec-title">弱点・隙間</div>
+        <ul class="strategy-list">
+          <li>DR21・被リンク104という低SEO基盤。「知っている人だけが使う」状態でオーガニック流入がほぼゼロ</li>
+          <li>コラム約60記事は量として不足。競合（エムスリー1,380件）との差が大きすぎる</li>
+          <li>ブランド認知が薬ゼミ・医学アカデミーのコミュニティ外に広がっていない</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="sec3">
+    <div class="section-label">Section 03</div>
+    <div class="section-title">競合とのポジション整理</div>
+
+    <div class="pos-wrap">
+      <h3>縦軸：コンテンツ充実度　／　横軸：在職薬剤師との日常接点</h3>
+
+      <!-- SVGポジショニングマップ -->
+      <div style="overflow-x:auto;">
+      <svg viewBox="0 0 700 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px;display:block;margin:0 auto;font-family:'Noto Sans JP',sans-serif;">
+
+        <!-- 背景 -->
+        <rect width="700" height="520" fill="#f7f8fa" rx="8"/>
+
+        <!-- プロットエリア: x 80-660, y 40-440 -->
+        <!-- 4象限の背景 -->
+        <!-- 左上：コンテンツ強×接点低〜中 -->
+        <rect x="80" y="40" width="290" height="200" fill="#f0faf7" rx="0"/>
+        <!-- 右上：コンテンツ強×接点高 ★ターゲットゾーン -->
+        <rect x="370" y="40" width="290" height="200" fill="#eef4ff" rx="0"/>
+        <!-- 左下：コンテンツ弱×接点低〜中 -->
+        <rect x="80" y="240" width="290" height="200" fill="#fafafa" rx="0"/>
+        <!-- 右下：コンテンツ弱×接点高 -->
+        <rect x="370" y="240" width="290" height="200" fill="#fffdf5" rx="0"/>
+
+        <!-- グリッド線 -->
+        <line x1="80" y1="240" x2="660" y2="240" stroke="#e0e4ec" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <line x1="370" y1="40"  x2="370" y2="440" stroke="#e0e4ec" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+        <!-- 外枠 -->
+        <rect x="80" y="40" width="580" height="400" fill="none" stroke="#d0d4dc" stroke-width="1.5" rx="4"/>
+
+        <!-- 軸ラベル -->
+        <!-- X軸 -->
+        <text x="80"  y="476" font-size="11" fill="#9aa3b2" text-anchor="start">接点 低</text>
+        <text x="660" y="476" font-size="11" fill="#9aa3b2" text-anchor="end">接点 高</text>
+        <line x1="115" y1="470" x2="625" y2="470" stroke="#d0d4dc" stroke-width="1" marker-end="url(#arr)"/>
+        <!-- Y軸 -->
+        <text x="44" y="440" font-size="11" fill="#9aa3b2" text-anchor="middle">コンテンツ 弱</text>
+        <text x="44" y="60"  font-size="11" fill="#9aa3b2" text-anchor="middle">コンテンツ 強</text>
+        <line x1="44" y1="420" x2="44" y2="58" stroke="#d0d4dc" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- 矢印マーカー -->
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#d0d4dc"/>
+          </marker>
+          <!-- ためとこの移動矢印 -->
+          <marker id="arr-tametoko" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto">
+            <path d="M0,0 L0,7 L10,3.5 z" fill="#0aaa82"/>
+          </marker>
+        </defs>
+
+        <!-- 象限ラベル（薄く） -->
+        <text x="90"  y="58"  font-size="10" fill="#b0c8b8" font-weight="600" letter-spacing="1">コンテンツ強 × 接点低〜中</text>
+        <text x="380" y="58"  font-size="10" fill="#b0c0e0" font-weight="600" letter-spacing="1">コンテンツ強 × 接点高　★</text>
+        <text x="90"  y="258" font-size="10" fill="#c0c0c0" font-weight="600" letter-spacing="1">コンテンツ弱 × 接点低〜中</text>
+        <text x="380" y="258" font-size="10" fill="#d0c898" font-weight="600" letter-spacing="1">コンテンツ弱 × 接点高</text>
+
+        <!-- ===== プロット各社 ===== -->
+        <!-- エムスリー (x=590, y=80) コンテンツ強・接点強 -->
+        <circle cx="590" cy="85" r="9" fill="#1e5fe8" opacity="0.85"/>
+        <rect x="530" y="64" width="108" height="18" rx="3" fill="#1e5fe8" opacity="0.9"/>
+        <text x="584" y="76" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">エムスリー</text>
+
+        <!-- マイナビ薬剤師 (x=580, y=290) コンテンツ中・接点強 -->
+        <circle cx="580" cy="300" r="9" fill="#d98200" opacity="0.85"/>
+        <rect x="509" y="310" width="132" height="18" rx="3" fill="#d98200" opacity="0.9"/>
+        <text x="575" y="322" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">マイナビ薬剤師</text>
+
+        <!-- ジョブメドレー (x=620, y=330) コンテンツ中・接点強 -->
+        <circle cx="622" cy="340" r="9" fill="#d98200" opacity="0.85"/>
+        <rect x="557" y="350" width="126" height="18" rx="3" fill="#d98200" opacity="0.9"/>
+        <text x="620" y="362" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">ジョブメドレー</text>
+
+        <!-- MPラーニング (x=200, y=110) コンテンツ強・接点低〜中 -->
+        <circle cx="200" cy="110" r="9" fill="#0aaa82" opacity="0.8"/>
+        <rect x="140" y="90" width="118" height="18" rx="3" fill="#0aaa82" opacity="0.9"/>
+        <text x="199" y="102" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">MPラーニング</text>
+
+        <!-- メディカルナレッジ (x=155, y=145) コンテンツ強・接点低 -->
+        <circle cx="155" cy="148" r="9" fill="#0aaa82" opacity="0.8"/>
+        <rect x="82" y="128" width="142" height="18" rx="3" fill="#0aaa82" opacity="0.9"/>
+        <text x="153" y="140" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">メディカルナレッジ</text>
+
+        <!-- JPEC (x=160, y=360) コンテンツ弱・接点低〜中 -->
+        <circle cx="165" cy="365" r="9" fill="#7a56c8" opacity="0.8"/>
+        <rect x="120" y="345" width="56" height="18" rx="3" fill="#7a56c8" opacity="0.9"/>
+        <text x="148" y="357" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">JPEC</text>
+
+        <!-- JPラーニング (x=135, y=395) コンテンツ弱・接点低 -->
+        <circle cx="135" cy="398" r="9" fill="#7a56c8" opacity="0.8"/>
+        <rect x="76" y="378" width="116" height="18" rx="3" fill="#7a56c8" opacity="0.9"/>
+        <text x="134" y="390" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">JPラーニング</text>
+
+        <!-- なの花薬局 (x=480, y=370) コンテンツ弱・接点中〜強 -->
+        <circle cx="480" cy="370" r="9" fill="#b08020" opacity="0.75"/>
+        <rect x="415" y="350" width="106" height="18" rx="3" fill="#b08020" opacity="0.85"/>
+        <text x="468" y="362" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">なの花薬局</text>
+
+        <!-- ===== ためとこ 現在 (x=220, y=370) コンテンツ弱・接点低〜中 ===== -->
+        <circle cx="220" cy="370" r="10" fill="#9aa3b2" opacity="0.7" stroke="#9aa3b2" stroke-width="1.5"/>
+        <rect x="155" y="388" width="126" height="18" rx="3" fill="#9aa3b2" opacity="0.85"/>
+        <text x="218" y="400" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">ためとこ（現在）</text>
+
+        <!-- ためとこ 現在→目標 の移動矢印 -->
+        <line x1="228" y1="362" x2="388" y2="182"
+              stroke="#0aaa82" stroke-width="2" stroke-dasharray="7,4"
+              marker-end="url(#arr-tametoko)" opacity="0.7"/>
+
+        <!-- ===== ためとこ 目標 (x=400, y=175) コンテンツ強・接点中 ===== -->
+        <!-- 光彩 -->
+        <circle cx="400" cy="175" r="18" fill="#0aaa82" opacity="0.12"/>
+        <circle cx="400" cy="175" r="12" fill="#0aaa82" opacity="0.85" stroke="#fff" stroke-width="2"/>
+        <rect x="327" y="150" width="146" height="20" rx="3" fill="#0aaa82"/>
+        <text x="400" y="163" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="700">ためとこ（目標）</text>
+
+      </svg>
+      </div>
+    </div>
+
+    <div class="pos-note">
+      <strong>ためとこの現在地：</strong>コンテンツ弱×接点低〜中のゾーン。単位管理機能と法人導入実績はあるが、SEOでの発見経路が薄くオーガニック流入がほぼゼロの状態。
+      <strong>目標ポジション：</strong>コンテンツを積み上げながら在職薬剤師との接点を広げ、エムスリーほど閉じた会員制でもなく、マイナビ・ジョブメドレーほど転職一辺倒でもない<strong>「学ぶ×続ける」中央地帯</strong>を狙う。
+    </div>
+  </section>
+
+
+</main>
+
+<footer>COMPETITIVE INTELLIGENCE REPORT — 薬剤師向け事業 競合分析 — 2026</footer>
+
+</body>
+</html>
